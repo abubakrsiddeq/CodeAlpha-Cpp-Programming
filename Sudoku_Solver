@@ -1,0 +1,142 @@
+#include <iostream>
+#include <vector>
+#include <limits>
+#include <stdexcept> // For exception handling
+using namespace std;
+
+// ANSI Escape Codes for Colors
+#define RESET   "\033[0m"
+#define BLUE    "\033[34m"
+#define GREEN   "\033[32m"
+#define RED     "\033[31m"
+#define YELLOW  "\033[33m"
+#define CYAN    "\033[36m"
+#define MAGENTA "\033[35m"
+
+class SudokuSolver {
+private:
+    vector<vector<int>> board;
+
+public:
+    // Constructor to initialize the Sudoku board
+    SudokuSolver(vector<vector<int>> b) {
+        board = b;
+    }
+
+    // Method to display the board in a readable format
+    void displayBoard() {
+        cout << CYAN << "-------------------------\n" << RESET;
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                cout << GREEN << board[i][j] << " " << RESET;
+                if ((j + 1) % 3 == 0) cout << "| ";
+            }
+            cout << endl;
+            if ((i + 1) % 3 == 0) cout << CYAN << "-------------------------\n" << RESET;
+        }
+    }
+
+    // Method to check if placing num at board[row][col] is valid
+    bool isValid(int row, int col, int num) {
+        // Check the row
+        for (int i = 0; i < 9; i++) {
+            if (board[row][i] == num) {
+                return false;
+            }
+        }
+
+        // Check the column
+        for (int i = 0; i < 9; i++) {
+            if (board[i][col] == num) {
+                return false;
+            }
+        }
+
+        // Check the 3x3 subgrid
+        int startRow = row - row % 3;
+        int startCol = col - col % 3;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[i + startRow][j + startCol] == num) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // Method to solve the Sudoku puzzle using backtracking
+    bool solve() {
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 9; col++) {
+                if (board[row][col] == 0) { // Find an empty cell
+                    for (int num = 1; num <= 9; num++) {
+                        if (isValid(row, col, num)) {
+                            board[row][col] = num;
+                            if (solve()) {
+                                return true;
+                            }
+                            board[row][col] = 0; // Backtrack
+                        }
+                    }
+                    return false; // No valid number found
+                }
+            }
+        }
+        return true; // Puzzle solved
+    }
+};
+
+// Function to take input from the user
+vector<vector<int>> getUserInput() {
+    vector<vector<int>> board(9, vector<int>(9, 0));
+    cout << YELLOW << "Enter the Sudoku puzzle (use 0 for empty cells):\n" << RESET;
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            while (true) {
+                try {
+                    cout << "Enter value for row " << i + 1 << ", column " << j + 1 << ": ";
+                    int num;
+                    cin >> num;
+
+                    if (cin.fail() || num < 0 || num > 9) {
+                        throw invalid_argument("Invalid input! Please enter a number between 0 and 9.");
+                    }
+                    board[i][j] = num;
+                    break;
+                }
+                catch (const invalid_argument& e) {
+                    cin.clear(); // Clear the error flag
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore invalid input
+                    cout << RED << e.what() << RESET << endl;
+                }
+            }
+        }
+    }
+    return board;
+}
+
+int main() {
+    try {
+        vector<vector<int>> puzzle = getUserInput();
+
+        SudokuSolver solver(puzzle);
+
+        cout << GREEN << "\nOriginal Sudoku Puzzle:\n" << RESET;
+        solver.displayBoard();
+
+        if (solver.solve()) {
+            cout << GREEN << "\nSolved Sudoku Puzzle:\n" << RESET;
+            solver.displayBoard();
+        }
+        else {
+            cout << RED << "\nNo solution exists for this Sudoku puzzle." << RESET << endl;
+        }
+    }
+    catch (const exception& e) {
+        cout << RED << "An error occurred: " << e.what() << RESET << endl;
+    }
+
+    return 0;
+}
